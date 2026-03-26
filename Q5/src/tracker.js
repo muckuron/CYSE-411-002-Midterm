@@ -34,10 +34,19 @@ function loadDashboardState() {
 //  directly to localStorage without validating it against the
 //  accepted list.
 
-
 function saveDashboardState() {
     const filterInput = document.getElementById("filter-select");
-    const filter      = filterInput.value;    // Not validated before storing
+    try {
+        if (ACCEPTED_FILTERS.includes(filterInput.value))
+        {
+            const filter = filterInput.value;
+        }
+         
+    } catch (error) {
+        console.error("Error parsing dashboard state:", error);
+        filter = "all";
+    }
+   
     localStorage.setItem("dashboardState", JSON.stringify({ filter: filter }));
     currentFilter = filter;
 }
@@ -55,9 +64,17 @@ function saveDashboardState() {
 
 
 async function fetchIncidents() {
-    const res  = fetch("/api/incidents");      // Missing await
-    const data = res.json();                   // Missing await; res is a Promise
-    return data;
+    try {
+        const res  = await fetch("/api/incidents");
+        const data = await res.json();           
+        if (res.ok != true) {
+            throw('HTTP error: ' + res.status);
+        }
+        return data;
+    } catch (error) {
+        console.error("Error:", error);
+    }
+    
 }
 
 
@@ -73,16 +90,23 @@ async function fetchIncidents() {
 
 function renderIncidents(incidents) {
     const container = document.getElementById("incident-list");
-    container.innerHTML = "";                  // Clear previous results
+    container.textContent = "";                  // Clear previous results
 
-    incidents.forEach(function (incident) {
+    incidents.forEach(function (incident) 
+    {
         const item = document.createElement("li");
-        // UNSAFE – directly inserts API response as HTML
-        item.innerHTML =
-            "<strong>" + incident.title + "</strong>" +
-            " <span class='severity severity-" + incident.severity + "'>" +
-            incident.severity + "</span>";
-        container.appendChild(item);
+        if (typeof incident.title === "string" && incident.title.length() > 0 && ACCEPTED_SEVERITIES.includes(incident.severity)) 
+        {
+            item.textContent =
+                "<strong>" + incident.title + "</strong>" +
+                " <%= span class='severity severity-" + incident.severity + "'>" +
+                incident.severity + "</span %=>";
+            container.appendChild(item);
+        } 
+        else
+        {
+            console.error("Invalid incident data:", incident);
+        }
     });
 }
 
