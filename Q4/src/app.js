@@ -16,9 +16,10 @@ function loadSession() {
 //  allowing any HTML or script tags in the message to
 //  execute in the viewer's browser (stored XSS).
 
+// Fix: replace innerHTML with textContent to prevent XSS injection attacks
 
-function renderStatusMessage(containerElement, message) {
-    containerElement.innerHTML = "<p>" + message + "</p>";   // UNSAFE
+function renderStatusMessage(statusContainer, message) {
+    statusContainer.textContent = "<p>" + message + "</p>";
 }
 
 
@@ -27,22 +28,36 @@ function renderStatusMessage(containerElement, message) {
 //  Builds a display label from the user's search input.
 //  VULNERABILITY: The raw input is used directly with no
 //  character filtering, no length limit, and no trimming.
+// TODO: Implement sanitization.
+// Requirements:
+//   - Allow only letters, digits, spaces, hyphens, underscores
+//   - Trim leading/trailing whitespace before processing
+//   - Max 40 characters
+//   - Return null if the result is empty after sanitization
 
+ //FIX: Add length checking, then trim to replace with regex, then check again if length is greater than zero, then return output if greater then zero or else return null if empty after sanitization
 
 function sanitizeSearchQuery(input) {
-    // TODO: Implement sanitization.
-    // Requirements:
-    //   - Allow only letters, digits, spaces, hyphens, underscores
-    //   - Trim leading/trailing whitespace before processing
-    //   - Max 40 characters
-    //   - Return null if the result is empty after sanitization
-    return input;   // UNSAFE – returns raw input unchanged
+    if (input.length <= 40 && input.length > 0)
+    {
+        input = input.trim().replace(/[^a-zA-Z0-9 _-]/g, '');
+        if (input.length > 0)
+        {
+            return input;
+        }
+        else        
+        {
+            return null;
+        }
+    }   
 }
+
+//FIXED: innerHTML replaced with textContent in label to prevent XSS injection attacks
 
 function performSearch(query) {
     const sanitized = sanitizeSearchQuery(query);
     const label = document.getElementById("search-label");
-    label.innerHTML = "Showing results for: " + sanitized;  // UNSAFE
+    label.textContent = "Showing results for: " + sanitized; 
 }
 
 
@@ -63,11 +78,16 @@ document.addEventListener("DOMContentLoaded", function () {
     // Simulate receiving a profile card with a status message
     // In production this would come from an API response.
     const simulatedProfiles = [
+         try
         {
-            name: "Alice Johnson",
-            department: "Engineering",
-            status: "Working from home today"
-        },
+            name: "Alice Johnson";
+            department: "Engineering";
+            status: "Working from home today";
+        } catch (error)
+        {
+            return null;
+        }
+           
         {
             name: "Bob Martinez",
             department: "Security",
@@ -97,6 +117,7 @@ document.addEventListener("DOMContentLoaded", function () {
         statusContainer.className = "status";
 
         // Q4.A – fix this call
+        //Fix: change element to statusContainer in renderStatusMessage function call
         renderStatusMessage(statusContainer, profile.status);
 
         card.appendChild(nameEl);
